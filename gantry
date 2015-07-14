@@ -1,0 +1,57 @@
+#!/usr/bin/python
+import subprocess
+import argparse
+import json
+import sys
+import os
+
+parser = argparse.ArgumentParser(prog='gantry')
+parser.add_argument('-d', action='store_true')
+parser.add_argument('--cap-add', action='append', help='Add Linux capabilities')
+parser.add_argument('-p', '--publish', action='append', help="Publish a container's port(s) to the host")
+parser.add_argument('-e', '--env', action='append', dest='env', help="Set environment variables")
+parser.add_argument('image', help='docker image')
+args = parser.parse_args()
+
+print args
+
+image = args.image
+
+manifest = ""
+
+try:
+	manifest =  subprocess.check_output(["docker", "run", "-it" ,"--rm", image, "cat", "/opt/manifest"])
+	manifest = json.loads(manifest)
+except Exception as e:
+	print e
+
+docker_env = ""
+docker_ports = ""
+
+def prompt(arg):
+	val =  raw_input("%s%s [%s]: " % ('* ' if arg['required'] else '  ', arg['display'],arg['default']))
+	if arg['default'] and val == "":
+		return arg['default']
+	return val
+
+
+for arg in manifest:
+	val = prompt(arg)
+	while arg['required'] and val == "":
+		val = prompt(arg)
+
+	if val == "":
+		val = arg['default']
+
+	elif arg['required'] == False and val == "":
+		pass		
+	else:
+		docker_env = "%s -e %s=%s " % (docker_env, arg['var_name'], val)
+
+
+for p in args.publish:
+	docker_ports =  "%s -p %s" % (docker_ports, p)
+
+#print docker_env
+print "docker run %s %s %s %s" % ('-d' if args.d else '', docker_ports, docker_env, image)
+#os.system('docker run -d ' docker_env
