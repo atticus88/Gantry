@@ -8,12 +8,10 @@ import os
 parser = argparse.ArgumentParser(prog='gantry')
 parser.add_argument('-d', action='store_true')
 parser.add_argument('--cap-add', action='append', help='Add Linux capabilities')
-parser.add_argument('-p', '--publish', action='append', help="Publish a container's port(s) to the host")
+parser.add_argument('-p', '--publish', default=[], action='append', help="Publish a container's port(s) to the host")
 parser.add_argument('-e', '--env', action='append', dest='env', help="Set environment variables")
 parser.add_argument('image', help='docker image')
 args = parser.parse_args()
-
-print args
 
 image = args.image
 
@@ -23,6 +21,7 @@ try:
 	manifest =  subprocess.check_output(["docker", "run", "-it" ,"--rm", image, "cat", "/opt/manifest"])
 	manifest = json.loads(manifest)
 except Exception as e:
+	print "Error: "
 	print e
 
 docker_env = ""
@@ -53,5 +52,5 @@ for p in args.publish:
 	docker_ports =  "%s -p %s" % (docker_ports, p)
 
 #print docker_env
-print "docker run %s %s %s %s" % ('-d' if args.d else '', docker_ports, docker_env, image)
+print "docker run %s%s %s %s" % ('-d ' if args.d else '', docker_ports, docker_env, image)
 #os.system('docker run -d ' docker_env
